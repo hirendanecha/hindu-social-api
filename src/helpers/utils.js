@@ -108,9 +108,9 @@ exports.notificationMail = async (userData) => {
 
 exports.channelNotificationEmail = async (userData) => {
   let name = userData?.Username;
-  let msg = `You have been assign in HealingTube channel by the HealingTube Admin.
-             To access your channel, log into your HealingTube account,click on the
-             HealingTube icon at the top of the page,then click on My Channel.`;
+  let msg = `You have been assign in HinduSocial channel by the HinduSocial Admin.
+             To access your channel, log into your HinduSocial account,click on the
+             HinduSocial icon at the top of the page,then click on My Channel.`;
 
   let redirectUrl = `${environment.FRONTEND_URL}`;
   const mailObj = {
