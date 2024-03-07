@@ -115,7 +115,7 @@ exports.channelNotificationEmail = async (userData) => {
   let redirectUrl = `${environment.FRONTEND_URL}`;
   const mailObj = {
     email: userData.Email,
-    subject: "Healing notification",
+    subject: "HinduSocial notification",
     root: "../email-templates/notification.ejs",
     templateData: { name: name, msg: msg, url: redirectUrl },
   };
@@ -142,7 +142,7 @@ exports.communityApproveEmail = async (profileId, isApprove) => {
     let redirectUrl = `${environment.FRONTEND_URL}`;
     const mailObj = {
       email: userData[0].Email,
-      subject: "Healing notification",
+      subject: "Hindu-social notification",
       root: "../email-templates/notification.ejs",
       templateData: { name: name, msg: msg, url: redirectUrl },
     };
