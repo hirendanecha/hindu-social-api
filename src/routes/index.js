@@ -17,6 +17,8 @@ const featuredChannels = require("./featured-channels.routes");
 const stripeRouter = require("./stripe.routes");
 const appointments = require("./appointments.routes");
 const plansRouter = require("./plans.routes");
+const advertizementRouter = require("./advertizment.routes");
+
 
 router.use("/login", authRoutes);
 router.use("/customers", userRoutes);
@@ -35,5 +37,7 @@ router.use("/channels", featuredChannels);
 router.use("/stripe", stripeRouter);
 router.use("/appointments", appointments);
 router.use("/plans", plansRouter);
+router.use("/advertizement", advertizementRouter);
+
 
 module.exports = router;
