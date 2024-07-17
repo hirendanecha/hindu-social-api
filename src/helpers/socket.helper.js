@@ -2,6 +2,7 @@ let logger = console;
 const socket = {};
 const { post, param } = require("../routes");
 const socketService = require("../service/socket-service");
+const chatService = require("../service/chat-service");
 const environment = require("../environments/environment");
 const jwt = require("jsonwebtoken");
 
