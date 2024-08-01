@@ -321,35 +321,29 @@ Community.getCommunity = async function (id, pageType) {
   const communityId = await executeQuery(query1, [id]);
   const ids = communityId.map((ele) => Number(ele.communityId)).join(",");
   let query = "";
-  // if (ids) {
-  //   query = `select c.*,count(cm.profileId) as members from community as c left join communityMembers as cm on cm.communityId = c.Id where c.isApprove = 'Y' AND c.pageType = '${pageType}' AND cm.profileId != ? group by c.Id order by c.Id desc;`;
-  // } else {
-  //   query = `select c.*,count(cm.profileId) as members from community as c left join communityMembers as cm on cm.communityId = c.Id where c.isApprove = 'Y' AND c.pageType = '${pageType}' AND cm.profileId != ? group by c.Id order by c.Id desc;`;
-  // }
   query = `select c.* from community as c where c.isApprove = 'Y' AND c.pageType = '${pageType}' group by c.Id order by c.Id desc;`;
-  // const communityList = await executeQuery(query, [id]);
   const communityList = await executeQuery(query);
   console.log(communityList);
   const localCommunities = [];
   for (const key in communityList) {
-    const query =
-      "select cm.profileId from communityMembers as cm where cm.communityId = ?;";
     const query1 =
       "select pe.eId,eh.name from practitioner_emphasis as pe left join emphasis_healing as eh on eh.eId = pe.eId where pe.communityId =? ";
     const query2 =
       "select pa.aId,ah.name from practitioner_area as pa left join area_healing as ah on ah.aId = pa.aId where pa.communityId =? ";
+    const query3 =
+      "select cm.profileId from communityMembers as cm where cm.communityId = ?;";
     if (Object.hasOwnProperty.call(communityList, key)) {
       const community = communityList[key];
       const values1 = [community.Id];
       const emphasis = await executeQuery(query1, values1);
       const areas = await executeQuery(query2, values1);
-      const members = await executeQuery(query, values1);
-      community.member = members.length;
       const memberList = [];
-      members.map((e) => {  
+      const members = await executeQuery(query3, values1);
+      members.map((e) => {
         memberList?.push(e.profileId);
       });
       community.memberList = memberList;
+      community.members = members.length;
       community.emphasis = emphasis;
       community.areas = areas;
       localCommunities.push(community);
