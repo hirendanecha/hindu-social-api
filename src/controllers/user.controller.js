@@ -448,7 +448,7 @@ exports.verification = function (req, res) {
     const token = await generateJwtToken(data);
     console.log(token);
     return res.redirect(
-      `${environments.FRONTEND_URL}/healing-registration?token=${token}`
+      `${environments.FRONTEND_URL}/hindu-registration?token=${token}`
     );
   });
 };
@@ -496,6 +496,7 @@ exports.getStats = async function (req, res) {
   const countryCode = req?.query?.countryCode;
   if (countryCode) {
     const states = await User.getStats(countryCode);
+    console.log(states);
     if (states) {
       res.json(states);
     } else {
