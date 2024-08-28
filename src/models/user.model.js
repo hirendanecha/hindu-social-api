@@ -48,7 +48,10 @@ User.login = function (email, Id, result) {
             p.DefaultUniqueLink,
             p.UniqueLink,
             p.AccountType,
-            cm.communityId
+            cm.communityId,
+            p.messageNotificationSound,
+            p.callNotificationSound,
+            p.tagNotificationSound
      FROM users as u left join profile as p on p.UserID = u.Id AND p.AccountType in ('I','M') left join communityMembers as cm on cm.profileId = p.ID WHERE u.Email = ? OR u.Username = ? AND u.Id = ?`,
     [email, email, Id],
     async function (err, res) {
@@ -118,7 +121,9 @@ User.create = function (userData, result) {
 
 User.findAndSearchAll = async (limit, offset, search, startDate, endDate) => {
   let whereCondition = `u.IsAdmin != 'Y' ${
-    search ? `AND u.Username LIKE '%${search}%' OR u.Email LIKE '%${search}%'` : ""
+    search
+      ? `AND u.Username LIKE '%${search}%' OR u.Email LIKE '%${search}%'`
+      : ""
   }`;
 
   if (startDate && endDate) {
@@ -158,7 +163,10 @@ User.findById = async function (user_id) {
   u.Username,
   u.AccountType,
   u.IsSuspended,
-  p.ID as profileId
+  p.ID as profileId,
+  p.messageNotificationSound,
+  p.callNotificationSound,
+  p.tagNotificationSound
 FROM users as u left join profile as p on p.UserID = u.Id WHERE u.Id = ? `;
   const values = [user_id];
   const user = await executeQuery(query, values);
