@@ -45,8 +45,7 @@ exports.registrationMail = async (userData, userId) => {
       userId: userId,
       email: userData.Email,
     },
-    jwtSecretKey,
-    { expiresIn: "730 days" }
+    jwtSecretKey
   );
 
   let registerUrl = `${environment.API_URL}customers/user/verification/${token}`;
@@ -70,8 +69,7 @@ exports.forgotPasswordMail = async (user) => {
       {
         userId: user?.Id,
       },
-      environment.JWT_SECRET_KEY,
-      { expiresIn: "1d" }
+      environment.JWT_SECRET_KEY
     );
 
     let forgotPasswordUrl = `${environment.FRONTEND_URL}reset-password/user?accesstoken=${token}`;
@@ -90,9 +88,31 @@ exports.forgotPasswordMail = async (user) => {
 };
 
 exports.notificationMail = async (userData) => {
-  let name = userData?.userName || userData.fileName;
-  let msg = `You were tagged in ${userData.senderUsername}'s ${userData.type}.`;
-  let redirectUrl = `${environment.FRONTEND_URL}post/${userData.postId}`;
+  let name = userData?.userName || userData.firstName;
+  let msg =
+    userData?.msg ||
+    `You were tagged in ${userData.senderUsername}'s ${userData.type}.`;
+  let redirectUrl = userData.postId
+    ? `${environment.FRONTEND_URL}post/${userData.postId}`
+    : userData?.type === "message"
+    ? `${environment.FRONTEND_URL}profile-chats`
+    : "";
+
+  const mailObj = {
+    email: userData.email,
+    subject: "HinduSocial notification",
+    root: "../email-templates/notification.ejs",
+    templateData: { name: name, msg: msg, url: redirectUrl },
+  };
+
+  await email.sendMail(mailObj);
+  return;
+};
+
+exports.notificationMailOnInvite = async (userData) => {
+  let name = userData?.userName || userData.firstName;
+  let msg = userData.msg;
+  let redirectUrl = `${environment.FRONTEND_URL}profile-chats`;
 
   const mailObj = {
     email: userData.email,
@@ -134,9 +154,9 @@ exports.communityApproveEmail = async (profileId, isApprove) => {
       userData[0]?.FirstName + " " + userData[0]?.LastName;
     let msg = "";
     if (isApprove === "Y") {
-      msg = `Hindu.social has approved your Practitioner account.`;
+      msg = `Hindu.social has approved your Community account.`;
     } else {
-      msg = `Hindu.social has unapproved your Practitioner account.`;
+      msg = `Hindu.social has unapproved your Community account.`;
     }
     let redirectUrl = `${environment.FRONTEND_URL}`;
     const mailObj = {
@@ -302,6 +322,20 @@ exports.notificationMailOnInvite = async (userData) => {
     subject: "Hindu.social notification",
     root: "../email-templates/notification.ejs",
     templateData: { name: name, msg: msg, url: redirectUrl },
+  };
+
+  await email.sendMail(mailObj);
+  return;
+};
+
+exports.channelCreationMail = async (adminMail, userName) => {
+  let redirectUrl = "https://admin.hindu.social/community";
+  let msg = `${userName} has create community on Hindu.social.`;
+  const mailObj = {
+    email: adminMail,
+    subject: "New community registered",
+    root: "../email-templates/notification.ejs",
+    templateData: { name: "Admin", msg: msg, url: redirectUrl },
   };
 
   await email.sendMail(mailObj);

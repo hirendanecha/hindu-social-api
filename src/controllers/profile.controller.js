@@ -26,11 +26,15 @@ exports.FindProfieById = async function (req, res) {
   if (req.params.id) {
     const id = req.params.id;
     console.log(id);
-    const profile = await Profile.FindById(id);
-    if (!profile) {
-      return utils.send500({ error: true, message: "not found" });
+    if (id) {
+      const profile = await Profile.FindById(id);
+      if (!profile) {
+        return utils.send500({ error: true, message: "not found" });
+      } else {
+        return res.json({ data: profile, error: false });
+      }
     } else {
-      return res.json({ data: profile, error: false });
+      return utils.send500({ error: true, message: "not found" });
     }
     // Profile.FindById(id, async function   (err, profile) {
     //   if (err) {
@@ -60,7 +64,7 @@ exports.updateProfile = async function (req, res) {
   if (req.body.constructor === Object && Object.keys(req.body).length === 0) {
     res.status(400).send({ error: true, message: "Error in application" });
   } else {
-    const profileId = req.params.id;
+    const profileId = +req.params.id;
     const reqBody = req.body;
     const profile = new Profile({ ...reqBody });
     const existingUsername = req.user.username;
@@ -73,7 +77,7 @@ exports.updateProfile = async function (req, res) {
         .json({ error: true, message: "Username is already exist" });
     }
 
-    if (req.body.Id === req.user.id) {
+    if (profileId === req.user.id) {
       if (req.body.UserID) {
         const updateUserData = {
           Username: reqBody?.Username,
@@ -158,8 +162,11 @@ exports.getNotificationById = async function (req, res) {
       limit
     )
   );
+  // return res.send({
+  //   error: false,
+  //   data: data,
+  // });
 };
-
 exports.getNotification = async function (req, res) {
   const { id } = req.params;
   const data = await Profile.getNotification(id);
@@ -227,6 +234,28 @@ exports.getGroupFileResourcesById = async function (req, res) {
     const posts = await Profile.getGroupFileResourcesById(id);
 
     return res.send(posts);
+  } catch (error) {
+    return utils.send500(res, error);
+  }
+};
+
+exports.joinGroup = async function (req, res) {
+  try {
+    const { id } = req.user;
+    const { researchProfileId } = req.body;
+    const group = await Profile.joinGroup(id, researchProfileId);
+    return res.send(group);
+  } catch (error) {
+    return utils.send500(res, error);
+  }
+};
+
+exports.leaveGroup = async function (req, res) {
+  try {
+    const { id } = req.user;
+    const { researchProfileId } = req.body;
+    const group = await Profile.leaveGroup(id, researchProfileId);
+    return res.send(group);
   } catch (error) {
     return utils.send500(res, error);
   }

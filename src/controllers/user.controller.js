@@ -8,6 +8,7 @@ const authorize = require("../middleware/authorize");
 
 const { getPagination, getCount, getPaginationData } = require("../helpers/fn");
 const { Encrypt } = require("../helpers/cryptography");
+const Profile = require("../models/profile.model");
 
 exports.login = async function (req, res) {
   console.log("jkfhguysdhfgbdf");
@@ -31,12 +32,12 @@ exports.login = async function (req, res) {
           }
           return res.status(400).send({ error: true, message: err });
         } else {
-          res.cookie("auth-user", token, {
-            // expire: new Date(Date.now() + 900000),
-            secure: true,
-            sameSite: "none",
-            domain: environments.domain,
-          });
+          // res.cookie("auth-user", token, {
+          //   // expire: new Date(Date.now() + 900000),
+          //   secure: true,
+          //   sameSite: "none",
+          //   domain: environments.domain,
+          // });
           return res.json(token);
         }
       });
@@ -81,20 +82,19 @@ exports.login = async function (req, res) {
     });
   }
 };
-
 exports.getToken = async function (req, res) {
-  const data = req?.cookies;
-  console.log(data["auth-user"]);
-  if (data) {
-    const token = data["auth-user"];
-
-    if (token) {
-      return res.json(token);
+  try {
+    const [user] = await Profile.FindById(req.user.id);
+    console.log("user", user);
+    if (user) {
+      // const data = req?.cookies;
+      // const token = data["auth-user"];
+      return res.json(user);
     } else {
-      return res.status(400).json({ message: "" });
+      return res.status(404).json({ message: "user not found", data: {} });
     }
-  } else {
-    return res.status(400).json({ message: "" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
 
@@ -295,7 +295,6 @@ exports.changeActiveStatus = function (req, res) {
     }
   });
 };
-
 exports.userSuspend = function (req, res) {
   console.log(req.params.id, req.query.IsSuspended);
   User.suspendUser(
@@ -416,7 +415,7 @@ exports.getZipData = function (req, res) {
       res.send({
         error: true,
         message:
-          "If Your postal code is not found in our database, Please enter a postal code nearest to you.",
+          "If Your postal code is not found in our database, Please enter a postal code nearest to you",
       });
     }
   });
@@ -434,7 +433,8 @@ exports.verification = function (req, res) {
     if (err) {
       if (err?.name === "TokenExpiredError" && data?.userId) {
         return res.redirect(
-          `${environments.FRONTEND_URL
+          `${
+            environments.FRONTEND_URL
           }/user/verification-expired?user=${encodeURIComponent(data.email)}`
         );
       }
@@ -472,16 +472,15 @@ exports.resendVerification = function (req, res) {
     });
   });
 };
-
 exports.logout = function (req, res) {
-  console.log("cookies");
+  console.log("innn==>");
   const token = req.headers.authorization.split(" ")[1];
   authorize.setTokenInList(token);
-  res.clearCookie("auth-user", {
-    sameSite: "none",
-    secure: true,
-    domain: environments.domain,
-  });
+  // res.clearCookie("auth-user", {
+  //   sameSite: "none",
+  //   secure: true,
+  //   domain: environments.domain,
+  // });
   // res.cookie("auth-user", 'Hello', {
   //   expire: new Date(Date.now() - 900000),
   //   secure: true,
@@ -491,24 +490,12 @@ exports.logout = function (req, res) {
   return res.status(200).json({ message: "logout successfully" });
 };
 
-exports.getStats = async function (req, res) {
-  console.log("innn");
-  const countryCode = req?.query?.countryCode;
-  if (countryCode) {
-    const states = await User.getStats(countryCode);
-    console.log(states);
-    if (states) {
-      res.json(states);
-    } else {
-      res.status(404).send({ message: "not found" });
-    }
-  }
-};
-
 exports.verifyToken = async function (req, res) {
   try {
     const token = req.params.token;
     const decoded = jwt.verify(token, environments.JWT_SECRET_KEY);
+    console.log(decoded.user);
+
     if (decoded.user) {
       res.status(200).send({ message: "Authorized User", verifiedToken: true });
     } else {
@@ -518,5 +505,18 @@ exports.verifyToken = async function (req, res) {
     }
   } catch (err) {
     res.status(401).json({ message: "Invalid token", verifiedToken: false });
+  }
+};
+
+exports.getStats = async function (req, res) {
+  console.log("innn");
+  const countryCode = req?.query?.countryCode;
+  if (countryCode) {
+    const states = await User.getStats(countryCode);
+    if (states) {
+      res.json(states);
+    } else {
+      res.status(404).send({ message: "not found" });
+    }
   }
 };

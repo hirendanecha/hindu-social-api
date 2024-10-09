@@ -48,10 +48,13 @@ User.login = function (email, Id, result) {
             p.DefaultUniqueLink,
             p.UniqueLink,
             p.AccountType,
-            cm.communityId,
+            p.userStatus,
             p.messageNotificationSound,
             p.callNotificationSound,
-            p.tagNotificationSound
+            p.tagNotificationSound,
+            p.messageNotificationEmail,
+            p.postNotificationEmail,
+            cm.communityId
      FROM users as u left join profile as p on p.UserID = u.Id AND p.AccountType in ('I','M') left join communityMembers as cm on cm.profileId = p.ID WHERE u.Email = ? OR u.Username = ? AND u.Id = ?`,
     [email, email, Id],
     async function (err, res) {
@@ -107,6 +110,7 @@ User.login = function (email, Id, result) {
     }
   );
 };
+
 User.create = function (userData, result) {
   db.query("INSERT INTO users set ?", userData, function (err, res) {
     if (err) {
@@ -125,6 +129,7 @@ User.findAndSearchAll = async (limit, offset, search, startDate, endDate) => {
       ? `AND u.Username LIKE '%${search}%' OR u.Email LIKE '%${search}%'`
       : ""
   }`;
+  console.log(search);
 
   if (startDate && endDate) {
     whereCondition += `AND u.DateCreation >= '${startDate}' AND u.DateCreation <= '${endDate}'`;
@@ -137,7 +142,67 @@ User.findAndSearchAll = async (limit, offset, search, startDate, endDate) => {
     `SELECT count(Id) as count FROM users as u WHERE ${whereCondition}`
   );
   const searchData = await executeQuery(
-    `SELECT u.Id, u.Email, u.Username, u.IsActive, u.DateCreation, u.IsAdmin, u.FirstName, u.LastName, u.Address, u.Country, u.City, u.State, u.Zip, u.AccountType, u.IsSuspended,p.MobileNo,p.ProfilePicName,p.ID as profileId,p.MediaApproved FROM users as u left join profile as p on p.UserID = u.Id  WHERE ${whereCondition} order by DateCreation desc limit ? offset ?`,
+    `SELECT 
+    u.Id, 
+    u.Email, 
+    u.Username, 
+    u.IsActive, 
+    u.DateCreation, 
+    u.IsAdmin, 
+    u.FirstName, 
+    u.LastName, 
+    u.Address, 
+    u.Country, 
+    u.City, 
+    u.State, 
+    u.Zip, 
+    u.AccountType, 
+    u.IsSuspended,
+    p.MobileNo,
+    p.ProfilePicName,
+    p.ID as profileId,
+    p.MediaApproved,
+    COUNT(us.Id) as unsubscribeCount 
+FROM 
+    users as u 
+LEFT JOIN 
+    profile as p 
+ON 
+    p.UserID = u.Id 
+    AND p.AccountType IN ('I','M') 
+LEFT JOIN 
+    unsubscribe_profiles as us 
+ON 
+    us.UnsubscribeProfileId = p.ID 
+WHERE 
+    ${whereCondition}
+GROUP BY 
+    u.Id, 
+    u.Email, 
+    u.Username, 
+    u.IsActive, 
+    u.DateCreation, 
+    u.IsAdmin, 
+    u.FirstName, 
+    u.LastName, 
+    u.Address, 
+    u.Country, 
+    u.City, 
+    u.State, 
+    u.Zip, 
+    u.AccountType, 
+    u.IsSuspended,
+    p.MobileNo,
+    p.ProfilePicName,
+    p.ID,
+    p.MediaApproved
+ORDER BY 
+    u.DateCreation DESC 
+LIMIT 
+    ? 
+OFFSET 
+    ?;
+`,
     [limit, offset]
   );
 
@@ -163,10 +228,7 @@ User.findById = async function (user_id) {
   u.Username,
   u.AccountType,
   u.IsSuspended,
-  p.ID as profileId,
-  p.messageNotificationSound,
-  p.callNotificationSound,
-  p.tagNotificationSound
+  p.ID as profileId
 FROM users as u left join profile as p on p.UserID = u.Id WHERE u.Id = ? `;
   const values = [user_id];
   const user = await executeQuery(query, values);
@@ -478,6 +540,13 @@ User.setPassword = async function (user_id, password) {
   return user;
 };
 
+User.findAdmin = async function () {
+  const query = `SELECT Email FROM users WHERE AccountType = 'admin'`;
+  const [user] = await executeQuery(query);
+  console.log(user);
+  return user;
+};
+
 User.getStats = async function (countryCode) {
   const query =
     "select state,country_code from zip_us where country_code = ? and state != '' group by state";
@@ -485,4 +554,5 @@ User.getStats = async function (countryCode) {
   const stats = await executeQuery(query, values);
   return stats;
 };
+
 module.exports = User;

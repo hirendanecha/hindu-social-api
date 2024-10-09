@@ -32,9 +32,7 @@ exports.fileupload = function (req, res) {
     try {
       fs.unlinkSync(newpath);
       fs.statSync(newpath);
-    } catch (e) {
-      return res.status(400).send({ message: "Something went wrong!" });
-    }
+    } catch (e) {}
 
     // copy the file to a new location
     fs.copyFile(oldpath, newpath, function (err) {

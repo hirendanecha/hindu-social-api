@@ -5,7 +5,6 @@ const utilsController = require("../controllers/utils.controller");
 const authorize = require("../middleware/authorize");
 
 router.get("/bySlug/:slug", communityController.findCommunityBySlug);
-router.get("/get-emphasis-and-area", communityController.getEmphasisAndArea);
 router.get("/get-link/:id", communityController.getLink);
 router.use(authorize.authorization);
 router.get("/", communityController.getCommunity);
@@ -13,8 +12,7 @@ router.get(
   "/get-communities-pages/:id",
   communityController.getLocalCommunities
 );
-router.post("/get-communities", communityController.findAllCommunity);
-router.post("/all-community", communityController.getCommunities);
+router.post("/all-community", communityController.findAllCommunity);
 // router.get("/un-approve-community", communityController.findUnApproveCommunity);
 router.get("/search", communityController.search);
 router.get("/:id", communityController.findCommunityById);
@@ -23,7 +21,6 @@ router.get(
   "/joined-community/:id",
   communityController.getJoinedCommunityByProfileId
 );
-
 router.get("/status/:id", communityController.approveCommunity);
 router.get("/change-user-type/:id", communityController.changeAccountType);
 router.get("/files/:folder/:id", utilsController.getFiles);
@@ -37,6 +34,7 @@ router.post(
   "/edit-advertizement-link",
   communityController.editAdvertizeMentLink
 );
+
 router.put("/edit/:id", communityController.editCommunity);
 router.post("/join-community", communityController.joinCommunity);
 router.post(
