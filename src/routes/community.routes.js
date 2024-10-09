@@ -5,6 +5,7 @@ const utilsController = require("../controllers/utils.controller");
 const authorize = require("../middleware/authorize");
 
 router.get("/bySlug/:slug", communityController.findCommunityBySlug);
+router.get("/get-emphasis-and-area", communityController.getEmphasisAndArea);
 router.get("/get-link/:id", communityController.getLink);
 router.use(authorize.authorization);
 router.get("/", communityController.getCommunity);
@@ -12,6 +13,7 @@ router.get(
   "/get-communities-pages/:id",
   communityController.getLocalCommunities
 );
+router.post("/get-communities", communityController.findAllCommunity);
 router.post("/all-community", communityController.findAllCommunity);
 // router.get("/un-approve-community", communityController.findUnApproveCommunity);
 router.get("/search", communityController.search);
