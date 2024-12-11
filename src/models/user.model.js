@@ -93,7 +93,12 @@ User.login = function (email, Id, result) {
             null
           );
         } else {
-          const token = await generateJwtToken(res[0]);
+          // const token = await generateJwtToken(res[0]);
+          const token = await generateJwtToken({
+            id: res[0].profileId,
+            username: res[0].Username,
+            active: res[0].IsActive,
+          });
           const query =
             "select c.channelId from channelAdmins as c left join profile as p on p.ID = c.profileId where c.profileId = p.ID and p.UserID = ?;";
           const value = [Id];
@@ -110,7 +115,6 @@ User.login = function (email, Id, result) {
     }
   );
 };
-
 User.create = function (userData, result) {
   db.query("INSERT INTO users set ?", userData, function (err, res) {
     if (err) {
@@ -129,7 +133,6 @@ User.findAndSearchAll = async (limit, offset, search, startDate, endDate) => {
       ? `AND u.Username LIKE '%${search}%' OR u.Email LIKE '%${search}%'`
       : ""
   }`;
-  console.log(search);
 
   if (startDate && endDate) {
     whereCondition += `AND u.DateCreation >= '${startDate}' AND u.DateCreation <= '${endDate}'`;
@@ -142,67 +145,7 @@ User.findAndSearchAll = async (limit, offset, search, startDate, endDate) => {
     `SELECT count(Id) as count FROM users as u WHERE ${whereCondition}`
   );
   const searchData = await executeQuery(
-    `SELECT 
-    u.Id, 
-    u.Email, 
-    u.Username, 
-    u.IsActive, 
-    u.DateCreation, 
-    u.IsAdmin, 
-    u.FirstName, 
-    u.LastName, 
-    u.Address, 
-    u.Country, 
-    u.City, 
-    u.State, 
-    u.Zip, 
-    u.AccountType, 
-    u.IsSuspended,
-    p.MobileNo,
-    p.ProfilePicName,
-    p.ID as profileId,
-    p.MediaApproved,
-    COUNT(us.Id) as unsubscribeCount 
-FROM 
-    users as u 
-LEFT JOIN 
-    profile as p 
-ON 
-    p.UserID = u.Id 
-    AND p.AccountType IN ('I','M') 
-LEFT JOIN 
-    unsubscribe_profiles as us 
-ON 
-    us.UnsubscribeProfileId = p.ID 
-WHERE 
-    ${whereCondition}
-GROUP BY 
-    u.Id, 
-    u.Email, 
-    u.Username, 
-    u.IsActive, 
-    u.DateCreation, 
-    u.IsAdmin, 
-    u.FirstName, 
-    u.LastName, 
-    u.Address, 
-    u.Country, 
-    u.City, 
-    u.State, 
-    u.Zip, 
-    u.AccountType, 
-    u.IsSuspended,
-    p.MobileNo,
-    p.ProfilePicName,
-    p.ID,
-    p.MediaApproved
-ORDER BY 
-    u.DateCreation DESC 
-LIMIT 
-    ? 
-OFFSET 
-    ?;
-`,
+    `SELECT u.Id, u.Email, u.Username, u.IsActive, u.DateCreation, u.IsAdmin, u.FirstName, u.LastName, u.Address, u.Country, u.City, u.State, u.Zip, u.AccountType, u.IsSuspended,p.MobileNo,p.ProfilePicName,p.ID as profileId,p.MediaApproved FROM users as u left join profile as p on p.UserID = u.Id  WHERE ${whereCondition} order by DateCreation desc limit ? offset ?`,
     [limit, offset]
   );
 
@@ -359,7 +302,12 @@ User.adminLogin = function (email, result) {
         } else {
           console.log("Login Data");
           console.log(user);
-          const token = await generateJwtToken(res[0]);
+          // const token = await generateJwtToken(res[0]);
+          const token = await generateJwtToken({
+            id: res[0].Id,
+            username: res[0].Username,
+            active: res[0].IsActive,
+          });
           return result(null, {
             userId: user.Id,
             user: user,
@@ -502,12 +450,13 @@ User.verification = function (token, result) {
       return result(err, decodedToken);
     }
     try {
+      console.log(decoded);
       const updateQuery = await executeQuery(
         "UPDATE users SET IsActive ='Y' WHERE Id = ?",
-        [decoded.userId]
+        [decoded.user.userId]
       );
       const fetchUser = await executeQuery("select * from users where Id = ?", [
-        decoded.userId,
+        decoded.user.userId,
       ]);
       console.log("fetchUser", updateQuery, fetchUser);
       return result(null, fetchUser[0]);
@@ -540,13 +489,6 @@ User.setPassword = async function (user_id, password) {
   return user;
 };
 
-User.findAdmin = async function () {
-  const query = `SELECT Email FROM users WHERE AccountType = 'admin'`;
-  const [user] = await executeQuery(query);
-  console.log(user);
-  return user;
-};
-
 User.getStats = async function (countryCode) {
   const query =
     "select state,country_code from zip_us where country_code = ? and state != '' group by state";
@@ -554,5 +496,4 @@ User.getStats = async function (countryCode) {
   const stats = await executeQuery(query, values);
   return stats;
 };
-
 module.exports = User;

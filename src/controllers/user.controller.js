@@ -5,6 +5,7 @@ const utils = require("../helpers/utils");
 const environments = require("../environments/environment");
 const jwt = require("jsonwebtoken");
 const authorize = require("../middleware/authorize");
+require("../common/common")();
 
 const { getPagination, getCount, getPaginationData } = require("../helpers/fn");
 const { Encrypt } = require("../helpers/cryptography");
@@ -86,7 +87,11 @@ exports.getToken = async function (req, res) {
   try {
     const [user] = await Profile.FindById(req.user.id);
     console.log("user", user);
+
     if (user) {
+      if (user.IsSuspended === "Y") {
+        return res.status(401).json({ message: "user suspended", data: {} });
+      }
       // const data = req?.cookies;
       // const token = data["auth-user"];
       return res.json(user);
@@ -415,7 +420,7 @@ exports.getZipData = function (req, res) {
       res.send({
         error: true,
         message:
-          "If Your postal code is not found in our database, Please enter a postal code nearest to you",
+          "If Your postal code is not found in our database, Please enter a postal code nearest to you.",
       });
     }
   });
@@ -472,6 +477,7 @@ exports.resendVerification = function (req, res) {
     });
   });
 };
+
 exports.logout = function (req, res) {
   console.log("innn==>");
   const token = req.headers.authorization.split(" ")[1];
@@ -490,24 +496,6 @@ exports.logout = function (req, res) {
   return res.status(200).json({ message: "logout successfully" });
 };
 
-exports.verifyToken = async function (req, res) {
-  try {
-    const token = req.params.token;
-    const decoded = jwt.verify(token, environments.JWT_SECRET_KEY);
-    console.log(decoded.user);
-
-    if (decoded.user) {
-      res.status(200).send({ message: "Authorized User", verifiedToken: true });
-    } else {
-      res
-        .status(401)
-        .json({ message: "Unauthorized Token", verifiedToken: false });
-    }
-  } catch (err) {
-    res.status(401).json({ message: "Invalid token", verifiedToken: false });
-  }
-};
-
 exports.getStats = async function (req, res) {
   console.log("innn");
   const countryCode = req?.query?.countryCode;
@@ -518,5 +506,32 @@ exports.getStats = async function (req, res) {
     } else {
       res.status(404).send({ message: "not found" });
     }
+  }
+};
+
+exports.verifyToken = async function (req, res) {
+  try {
+    const token = req.params.token;
+    const decoded = jwt.verify(token, environments.JWT_SECRET_KEY);
+    console.log(decoded.user);
+
+    if (decoded.user) {
+      const [profile] = await Profile.FindById(decoded.user.id);
+      if (profile?.IsSuspended === "Y") {
+        res
+          .status(401)
+          .send({ message: "user has been suspended", verifiedToken: false });
+      } else {
+        res
+          .status(200)
+          .send({ message: "Authorized User", verifiedToken: true });
+      }
+    } else {
+      res
+        .status(401)
+        .json({ message: "Unauthorized Token", verifiedToken: false });
+    }
+  } catch (err) {
+    res.status(401).json({ message: "Invalid token", verifiedToken: false });
   }
 };

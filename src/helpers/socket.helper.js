@@ -4,6 +4,7 @@ const socketService = require("../service/socket-service");
 const chatService = require("../service/chat-service");
 const environment = require("../environments/environment");
 const jwt = require("jsonwebtoken");
+const Profile = require("../models/profile.model");
 
 socket.config = (server) => {
   const io = require("socket.io")(server, {
@@ -29,7 +30,13 @@ socket.config = (server) => {
           return next(err);
         }
         socket.user = decoded.user;
-
+        if (decoded.user.username !== "admin") {
+          const [profile] = await Profile.FindById(decoded.user.id);
+          if (profile?.IsSuspended === "Y") {
+            const err = new Error("user has been suspended");
+            return next(err);
+          }
+        }
         // Function to join existing rooms
         if (socket.user.id) {
           const chatData = await chatService.getRoomsIds(socket.user.id);
@@ -268,12 +275,24 @@ socket.config = (server) => {
             actionType: params.actionType,
           });
           // notification - emit - to user
-          if (notification) {
-            io.to(`${notification.notificationToProfileId}`).emit(
-              "notification",
-              notification
-            );
-          }
+          io.to(`${notification.notificationToProfileId}`).emit(
+            "notification",
+            notification
+          );
+          // } else if (params.communityPostId) {
+          //   const data = await socketService.likeFeedPost(params);
+          //   socket.broadcast.emit("community-post", data);
+          //   const notification = await socketService.createNotification({
+          //     notificationToProfileId: params.toProfileId,
+          //     postId: params.communityPostId,
+          //     notificationByProfileId: params.profileId,
+          //     actionType: params.actionType,
+          //   });
+          //   // notification - emit - to user
+          //   io.to(`${notification.notificationToProfileId}`).emit(
+          //     "notification",
+          //     notification
+          //   );
         }
       } else {
         if (params.postId) {
@@ -281,6 +300,10 @@ socket.config = (server) => {
           // socket.broadcast.emit("new-post", data);
           io.emit("likeOrDislike", data.posts);
         }
+        // else if (params.communityPostId) {
+        //   const data = await socketService.disLikeFeedPost(params);
+        //   socket.broadcast.emit("community-post", data);
+        // }
       }
     });
 
@@ -621,7 +644,7 @@ socket.config = (server) => {
           if (params.groupId) {
             io.to(`${params?.groupId}`).emit("new-message", data);
           } else {
-            io.to(`${params?.profileId}`).emit("new-message", data);
+            io.to(`${params?.roomId}`).emit("new-message", data);
           }
           if (data) {
             return cb(data);
@@ -642,7 +665,10 @@ socket.config = (server) => {
       try {
         if (params) {
           const data = await chatService.deleteMessage(params);
-          io.to(`${params?.profileId}`).emit("new-message", data);
+          io.to(`${params?.roomId || params?.groupId}`).emit(
+            "new-message",
+            data
+          );
           if (data) {
             return cb(data);
           }
@@ -730,11 +756,10 @@ socket.config = (server) => {
       try {
         if (params) {
           const data = await chatService.declineCall(params);
-          if (params?.roomId) {
+          if (params?.roomId && data) {
             io.to(`${params?.roomId}`).emit("notification", data);
             return cb(true);
-          } else if (params.groupId) {
-            console.log("decline-group-calll===>>>>>>>>>>>>>>>>>>>>>", data);
+          } else if (params.groupId && data) {
             io.to(`${params?.groupId}`).emit("notification", data);
             return cb(true);
           }
@@ -791,6 +816,11 @@ socket.config = (server) => {
             for (const notification of data?.notifications) {
               if (notification?.notificationToProfileId) {
                 io.to(`${notification?.notificationToProfileId}`).emit(
+                  "notification",
+                  notification
+                );
+              } else {
+                io.to(`${notification?.groupId}`).emit(
                   "notification",
                   notification
                 );

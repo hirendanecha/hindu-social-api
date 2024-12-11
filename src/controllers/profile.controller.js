@@ -26,15 +26,11 @@ exports.FindProfieById = async function (req, res) {
   if (req.params.id) {
     const id = req.params.id;
     console.log(id);
-    if (id) {
-      const profile = await Profile.FindById(id);
-      if (!profile) {
-        return utils.send500({ error: true, message: "not found" });
-      } else {
-        return res.json({ data: profile, error: false });
-      }
-    } else {
+    const profile = await Profile.FindById(id);
+    if (!profile) {
       return utils.send500({ error: true, message: "not found" });
+    } else {
+      return res.json({ data: profile, error: false });
     }
     // Profile.FindById(id, async function   (err, profile) {
     //   if (err) {
@@ -239,6 +235,52 @@ exports.getGroupFileResourcesById = async function (req, res) {
   }
 };
 
+exports.groupsLists = async function (req, res) {
+  try {
+    const { page, size, search, pageType, startDate, endDate } = req.body;
+    const { limit, offset } = getPagination(page, size);
+    const groupedPosts = await Profile.groupsLists(
+      limit,
+      offset,
+      search,
+      pageType,
+      startDate,
+      endDate
+    );
+
+    return res.send(
+      getPaginationData(
+        { count: groupedPosts.count, docs: groupedPosts.data },
+        page,
+        limit
+      )
+    );
+  } catch (error) {
+    return utils.send500(res, error);
+  }
+};
+
+exports.createGroup = async function (req, res) {
+  try {
+    const data = req.body;
+    const groups = await Profile.createGroup(data);
+    return res.send(groups);
+  } catch (error) {
+    return utils.send500(res, error);
+  }
+};
+exports.editGroups = async function (req, res) {
+  try {
+    const { id } = req.params;
+    const data = req.body.groupData;
+    const membersIds = req.body.selectedMembers;
+    const groups = await Profile.editGroups(id, data, membersIds);
+    return res.send(groups);
+  } catch (error) {
+    return utils.send500(res, error);
+  }
+};
+
 exports.joinGroup = async function (req, res) {
   try {
     const { id } = req.user;
@@ -252,11 +294,37 @@ exports.joinGroup = async function (req, res) {
 
 exports.leaveGroup = async function (req, res) {
   try {
-    const { id } = req.user;
-    const { researchProfileId } = req.body;
-    const group = await Profile.leaveGroup(id, researchProfileId);
+    // const { id } = req.user;
+    const { researchProfileId, profileId } = req.body;
+    const group = await Profile.leaveGroup(profileId, researchProfileId);
     return res.send(group);
   } catch (error) {
     return utils.send500(res, error);
   }
+};
+
+exports.deleteGroup = async function (req, res) {
+  try {
+    // const { id } = req.user;
+    const { id } = req.params;
+    const group = await Profile.deleteGroup(id);
+    return res.send(group);
+  } catch (error) {
+    return utils.send500(res, error);
+  }
+};
+
+exports.readAllNotifications = async function (req, res) {
+  const { id } = req.params;
+  Profile.readAllNotifications(id, function (err) {
+    if (err) return utils.send500(res, err);
+    res.json({ error: false, message: "Notification updated successfully" });
+  });
+};
+
+exports.deleteAllNotification = function (req, res) {
+  Profile.deleteAllNotification(req.params.id, function (err, result) {
+    if (err) return utils.send500(res, err);
+    res.json({ error: false, message: "Notification deleted successfully" });
+  });
 };
