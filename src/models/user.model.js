@@ -95,9 +95,9 @@ User.login = function (email, Id, result) {
         } else {
           // const token = await generateJwtToken(res[0]);
           const token = await generateJwtToken({
-            id: res[0].profileId,
-            username: res[0].Username,
-            active: res[0].IsActive,
+            profileId: res[0].profileId,
+            Username: res[0].Username,
+            IsActive: res[0].IsActive,
           });
           const query =
             "select c.channelId from channelAdmins as c left join profile as p on p.ID = c.profileId where c.profileId = p.ID and p.UserID = ?;";
@@ -304,9 +304,9 @@ User.adminLogin = function (email, result) {
           console.log(user);
           // const token = await generateJwtToken(res[0]);
           const token = await generateJwtToken({
-            id: res[0].Id,
-            username: res[0].Username,
-            active: res[0].IsActive,
+            profileId: res[0].Id,
+            Username: res[0].Username,
+            IsActive: res[0].IsActive,
           });
           return result(null, {
             userId: user.Id,
